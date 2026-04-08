@@ -1,0 +1,22 @@
+name: "Parse JSONC"
+description: "Parse a JSONC file and expose values as outputs"
+author: "Ronny Van Dessel"
+
+inputs:
+  path:
+    description: "Path to the JSONC file"
+    required: true
+
+outputs:
+  targets_r0:
+    description: "Targets_R0 value from JSONC"
+    value: ${{ steps.parse.outputs.targets_r0 }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Parse JSONC
+      id: parse
+      shell: pwsh
+      run: |
+        & "${{ github.action_path }}/scripts/parse-jsonc.ps1" -Path "${{ inputs.path }}"
