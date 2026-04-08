@@ -12,6 +12,7 @@ outputs:
     description: "Targets_R0 value from JSONC"
     value: ${{ steps.parse.outputs.targets_r0 }}
 
+
 runs:
   using: "composite"
   steps:
@@ -19,4 +20,15 @@ runs:
       id: parse
       shell: pwsh
       run: |
-        & "${{ github.action_path }}/scripts/parse-jsonc.ps1" -Path "${{ inputs.path }}"
+        $scriptPath = Join-Path "${{ github.action_path }}" "scripts\parse-jsonc.ps1"
+
+        Write-Host "Action path: ${{ github.action_path }}"
+        Write-Host "Resolved script path: $scriptPath"
+
+        if (-not (Test-Path $scriptPath)) {
+          Write-Error "Script not found at $scriptPath"
+          Get-ChildItem -Recurse "${{ github.action_path }}"
+          exit 1
+        }
+
+        & $scriptPath -Path "${{ inputs.path }}"
