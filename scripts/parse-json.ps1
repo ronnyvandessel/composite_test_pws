@@ -32,7 +32,7 @@ Write-Host "Targets_R0 = $targetsR0"
 # Expose output to GitHub Actions
 "targets_r0=$targetsR0" >> $env:GITHUB_OUTPUT
 
-$lines = Get-Content data.txt
+$lines = Get-Content .\data.txt
 foreach ($line in $lines) {
     Write-Host $line
 }
