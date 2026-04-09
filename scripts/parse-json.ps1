@@ -37,4 +37,4 @@ $lines = Get-Content $dataPath
 foreach ($line in $lines) {
     Write-Host $line
 }
-"lijnen=$($lines.Count)" >> $env:GITHUB_OUTPUT
+"lines_count=$($lines.Count)" >> $env:GITHUB_OUTPUT
