@@ -3,6 +3,46 @@ param (
     [string]$Path
 )
 
+# =========================
+# Load powershell-yaml from local .nupkg
+# =========================
+
+$packageName = "powershell-yaml.0.4.12.nupkg"
+
+# Pad naar de .nupkg in de action repo
+$nupkgPath = Join-Path $PSScriptRoot "..\packages\$packageName"
+
+if (-not (Test-Path $nupkgPath)) {
+    Write-Error "NuPkg not found: $nupkgPath"
+    exit 1
+}
+
+# Tijdelijke extractie-map op de runner
+$extractRoot = Join-Path $env:RUNNER_TEMP "powershell-yaml"
+
+# Opruimen indien eerdere run
+if (Test-Path $extractRoot) {
+    Remove-Item $extractRoot -Recurse -Force
+}
+
+Write-Host "Extracting powershell-yaml from $nupkgPath"
+Expand-Archive -Path $nupkgPath -DestinationPath $extractRoot -Force
+
+# powershell-yaml zit normaal in tools/
+$modulePath = Join-Path $extractRoot "tools\powershell-yaml.psm1"
+
+if (-not (Test-Path $modulePath)) {
+    Write-Error "powershell-yaml module not found at $modulePath"
+    Write-Host "Contents of extract root:"
+    Get-ChildItem $extractRoot -Recurse
+    exit 1
+}
+
+Import-Module $modulePath -Force
+Write-Host "✅ powershell-yaml module loaded from local .nupkg"
+
+
+
 Write-Host "Reading JSONC from: $Path"
 
 if (-not (Test-Path $Path)) {
