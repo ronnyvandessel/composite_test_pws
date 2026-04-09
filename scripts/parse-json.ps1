@@ -39,10 +39,15 @@ foreach ($line in $lines) {
 }
 "lines_count=$($lines.Count)" >> $env:GITHUB_OUTPUT
 
-## schrijven naar een bestand
-$outputPath = Join-Path $PSScriptRoot "data.txt"
-$outputContent = "Targets_R0: $targetsR0`nLines Count: $($lines.Count)"
-Set-Content -Path $outputPath -Value $outputContent
-Write-Host "Output written to: $outputPath"
+# schrijven naar $path
 
+
+# Nieuwe lijnen toevoegen
+$newTargets = @("SOFV000010", "SOFV000011")
+
+$config.Targets_R0 += $newTargets
+
+# JSON terug wegschrijven
+$config | ConvertTo-Json -Depth 10 | Set-Content $Path
+Write-Host "Updated JSONC written to: $Path"
 
