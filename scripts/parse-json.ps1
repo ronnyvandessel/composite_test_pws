@@ -17,10 +17,9 @@ if (-not (Test-Path $nupkgPath)) {
     exit 1
 }
 
-# Tijdelijke extractie-map op de runner
+# Tijdelijke extractie-map
 $extractRoot = Join-Path $env:RUNNER_TEMP "powershell-yaml"
 
-# Opruimen indien eerdere run
 if (Test-Path $extractRoot) {
     Remove-Item $extractRoot -Recurse -Force
 }
@@ -28,12 +27,12 @@ if (Test-Path $extractRoot) {
 Write-Host "Extracting powershell-yaml from $nupkgPath"
 Expand-Archive -Path $nupkgPath -DestinationPath $extractRoot -Force
 
-# powershell-yaml zit normaal in tools/
-$modulePath = Join-Path $extractRoot "tools\powershell-yaml.psm1"
+# ✅ CORRECTE MODULELOCATIE
+$modulePath = Join-Path $extractRoot "content\powershell-yaml\powershell-yaml.psm1"
 
 if (-not (Test-Path $modulePath)) {
     Write-Error "powershell-yaml module not found at $modulePath"
-    Write-Host "Contents of extract root:"
+    Write-Host "Extracted contents:"
     Get-ChildItem $extractRoot -Recurse
     exit 1
 }
@@ -42,8 +41,7 @@ Import-Module $modulePath -Force
 Write-Host "✅ powershell-yaml module loaded from local .nupkg"
 
 
-
-Write-Host "Reading JSONC from: $Path"
+<# Write-Host "Reading JSONC from: $Path"
 
 if (-not (Test-Path $Path)) {
     Write-Error "File not found: $Path"
@@ -115,3 +113,4 @@ else {
     Write-Host "ℹ️ No changes to commit"
 }
 
+ #>
