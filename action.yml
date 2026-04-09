@@ -12,6 +12,11 @@ outputs:
     description: "Targets_R0 value from JSONC"
     value: ${{ steps.parse.outputs.targets_r0 }}
 
+  lines_count:
+    description: "Number of lines in data.txt"
+    value: ${{ steps.parse.outputs.lines_count }}
+
+
 
 runs:
   using: "composite"
