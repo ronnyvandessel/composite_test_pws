@@ -42,6 +42,18 @@ Write-Host $modulePath
 Import-Module $modulePath -Force
 Write-Host "✅ powershell-yaml module loaded successfully"
 
+Write-Host "Reading YAML from: $Path"
+
+
+$yamlPath = Join-Path $PSScriptRoot "config.yaml"
+
+$yamlRaw = Get-Content $yamlPath -Raw
+$config  = ConvertFrom-Yaml $yamlRaw
+
+$config.project.name
+write-host config: $config
+
+
 <# Write-Host "Reading JSONC from: $Path"
 
 if (-not (Test-Path $Path)) {
