@@ -21,7 +21,7 @@ if (Test-Path $extractRoot) {
     Remove-Item $extractRoot -Recurse -Force
 }
 
-Write-Host "Extracting powershell-yaml from $nupkgPath"
+Write-Host "Extracting powershell-yaml van $nupkgPath"
 Expand-Archive -Path $nupkgPath -DestinationPath $extractRoot -Force
 
 # 🔍 Zoek automatisch naar de module
@@ -36,13 +36,12 @@ if (-not $modulePath) {
     exit 1
 }
 
-Write-Host "Found powershell-yaml module at:"
-Write-Host $modulePath
+
 
 Import-Module $modulePath -Force
-Write-Host "✅ powershell-yaml module loaded successfully"
+Write-Host "powershell-yaml module geladen"
 
-Write-Host "Reading YAML from: $Path"
+Write-Host "uitlezen YAML : $Path"
 
 
 $yamlPath = $path
