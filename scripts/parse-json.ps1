@@ -51,3 +51,27 @@ $config.Targets_R0 += $newTargets
 $config | ConvertTo-Json -Depth 10 | Set-Content $Path
 Write-Host "Updated JSONC written to: $Path"
 
+
+if ($env:GITHUB_ACTOR -eq "github-actions[bot]") {
+    Write-Host "Skipping commit to avoid loop"
+    exit 0
+}
+
+# --- GIT COMMIT & PUSH ---
+git config user.name "github-actions"
+git config user.email "actions@github.com"
+
+git status
+
+git add Params.jsonc
+
+# Alleen committen als er echt iets gewijzigd is
+if (-not (git diff --cached --quiet)) {
+    git commit -m "Update Params.jsonc via workflow"
+    git push
+    Write-Host "✅ Changes committed and pushed"
+}
+else {
+    Write-Host "ℹ️ No changes to commit"
+}
+
