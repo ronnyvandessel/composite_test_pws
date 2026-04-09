@@ -38,3 +38,11 @@ foreach ($line in $lines) {
     Write-Host $line
 }
 "lines_count=$($lines.Count)" >> $env:GITHUB_OUTPUT
+
+## schrijven naar een bestand
+$outputPath = Join-Path $PSScriptRoot "data.txt"
+$outputContent = "Targets_R0: $targetsR0`nLines Count: $($lines.Count)"
+Set-Content -Path $outputPath -Value $outputContent
+Write-Host "Output written to: $outputPath"
+
+
