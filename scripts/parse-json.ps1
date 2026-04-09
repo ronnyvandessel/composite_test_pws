@@ -45,7 +45,7 @@ Write-Host "✅ powershell-yaml module loaded successfully"
 Write-Host "Reading YAML from: $Path"
 
 
-$yamlPath = Join-Path $PSScriptRoot "config.yaml"
+$yamlPath = $path
 
 $yamlRaw = Get-Content $yamlPath -Raw
 $config  = ConvertFrom-Yaml $yamlRaw
