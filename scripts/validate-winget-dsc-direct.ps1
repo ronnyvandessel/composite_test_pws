@@ -36,6 +36,44 @@ function Test-WinGetPackageExists {
     }
 }
 
+# =========================
+# Load powershell-yaml from local .nupkg (robust)
+# =========================
+
+$packageName = "powershell-yaml.0.4.12.nupkg"
+
+$nupkgPath = Join-Path $PSScriptRoot "..\packages\$packageName"
+if (-not (Test-Path $nupkgPath)) {
+    Write-Error "NuPkg not found: $nupkgPath"
+    exit 1
+}
+
+$extractRoot = Join-Path $env:RUNNER_TEMP "powershell-yaml"
+
+if (Test-Path $extractRoot) {
+    Remove-Item $extractRoot -Recurse -Force
+}
+
+Write-Host "Extracting powershell-yaml van $nupkgPath"
+Expand-Archive -Path $nupkgPath -DestinationPath $extractRoot -Force
+
+# 🔍 Zoek automatisch naar de module
+$modulePath = Get-ChildItem $extractRoot -Recurse -Filter "*.psm1" |
+              Where-Object { $_.Name -match "powershell-yaml" } |
+              Select-Object -First 1 -ExpandProperty FullName
+
+if (-not $modulePath) {
+    Write-Error "powershell-yaml.psm1 not found in extracted package"
+    Write-Host "Extracted contents:"
+    Get-ChildItem $extractRoot -Recurse
+    exit 1
+}
+
+
+
+Import-Module $modulePath -Force
+Write-Host "powershell-yaml module geladen"
+
 # --------------------------------------------------
 # Parse DSC YAML
 # --------------------------------------------------
