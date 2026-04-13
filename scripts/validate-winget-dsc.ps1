@@ -172,3 +172,8 @@ foreach ($res in $wingetResources) {
 }
 
 if ($errors.Count -gt 0) {
+    Write-Error "Invalid WinGet package IDs found: $($errors -join ', ')"
+    exit 1
+}
+
+Write-Host "🎉 All WinGet DSC packages are valid."
