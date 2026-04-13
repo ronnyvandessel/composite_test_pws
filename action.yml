@@ -8,15 +8,17 @@ inputs:
 
 runs:
   using: composite
-  steps:
-    - name: Checkout winget-pkgs repository
-      uses: actions/checkout@v4
-      with:
-        repository: microsoft/winget-pkgs
-        path: winget-pkgs
+   steps:
+    # - name: Checkout winget-pkgs repository
+    #   uses: actions/checkout@v4
+    #   with:
+    #     repository: microsoft/winget-pkgs
+    #     path: winget-pkgs
 
     - name: Validate WinGet packages in DSC
       shell: pwsh
       run: |
-        $script = Join-Path $env:GITHUB_ACTION_PATH 'scripts/validate-winget-dsc.ps1'
-        & $script  -DscFile "${{ inputs.dscfile }}"  -WingetRepoRoot "winget-pkgs"
+        # $script = Join-Path $env:GITHUB_ACTION_PATH 'scripts/validate-winget-dsc.ps1'
+        # & $script  -DscFile "${{ inputs.dscfile }}"  -WingetRepoRoot "winget-pkgs"
+        
+          & (Join-Path $env:GITHUB_ACTION_PATH 'scripts/validate-winget-dsc-direct.ps1') -DscFile "${{ inputs.dscfile }}"
