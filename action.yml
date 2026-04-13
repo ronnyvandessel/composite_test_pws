@@ -1,39 +1,22 @@
-name: "Parse JSONC"
-description: "Parse a JSONC file and expose values as outputs"
-author: "Ronny Van Dessel"
+name: Validate WinGet DSC Packages
+description: Validate Microsoft.WinGet.DSC/WinGetPackage resources in a DSC YAML file
 
 inputs:
-  path:
-    description: "Path to the JSONC file"
+  dscfile:
+    description: Path to the DSC YAML configuration file
     required: true
 
-outputs:
-  targets_r0:
-    description: "Targets_R0 value from JSONC"
-    value: ${{ steps.parse.outputs.targets_r0 }}
-
-  lines_count:
-    description: "Number of lines in data.txt"
-    value: ${{ steps.parse.outputs.lines_count }}
-
-
-
 runs:
-  using: "composite"
+  using: composite
   steps:
-    - name: Parse JSONC
-      id: parse
+    - name: Checkout winget-pkgs repository
+      uses: actions/checkout@v4
+      with:
+        repository: microsoft/winget-pkgs
+        path: winget-pkgs
+
+    - name: Validate WinGet packages in DSC
       shell: pwsh
       run: |
-        $scriptPath = Join-Path "${{ github.action_path }}" "scripts\parse-json.ps1"
-
-        Write-Host "Action path: ${{ github.action_path }}"
-        Write-Host "Resolved script path: $scriptPath"
-
-        if (-not (Test-Path $scriptPath)) {
-          Write-Error "Script not found at $scriptPath"
-          Get-ChildItem -Recurse "${{ github.action_path }}"
-          exit 1
-        }
-
-        & $scriptPath -Path "${{ inputs.path }}"
+        $script = Join-Path $env:GITHUB_ACTION_PATH 'scripts/validate-winget-dsc.ps1'
+        & $script  -DscFile "${{ inputs.dscfile }}"  -WingetRepoRoot "winget-pkgs"
