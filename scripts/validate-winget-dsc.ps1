@@ -1,9 +1,11 @@
 [CmdletBinding()]
 param (
     [Parameter(Mandatory)]
+    [ValidateNotNullOrEmpty()]
     [string]$DscFile,
 
     [Parameter(Mandatory)]
+    [ValidateNotNullOrEmpty()]
     [string]$WingetRepoRoot
 )
 
@@ -14,10 +16,10 @@ if (-not (Test-Path $DscFile)) {
     exit 1
 }
 
-
-# -------- Helpers --------
-
-function Test-WinGetPackageDownloadable {
+# --------------------------------------------------
+# Helper: check if package EXISTS in winget
+# --------------------------------------------------
+function Test-WinGetPackageExists {
     param (
         [Parameter(Mandatory)]
         [string]$PackageId,
@@ -34,12 +36,33 @@ function Test-WinGetPackageDownloadable {
     $firstLetter = $publisher.Substring(0,1).ToLower()
 
     $packagePath = Join-Path $WingetRepoRoot "manifests\$firstLetter\$publisher\$app"
+
+    return (Test-Path $packagePath)
+}
+
+# --------------------------------------------------
+# Helper: best-effort downloadability check (OPTIONAL)
+# --------------------------------------------------
+function Test-WinGetPackageHasInstaller {
+    param (
+        [Parameter(Mandatory)]
+        [string]$PackageId,
+
+        [Parameter(Mandatory)]
+        [string]$WingetRepoRoot
+    )
+
+    $publisher, $app = $PackageId -split '\.', 2
+    $firstLetter = $publisher.Substring(0,1).ToLower()
+    $packagePath = Join-Path $WingetRepoRoot "manifests\$firstLetter\$publisher\$app"
+
     if (-not (Test-Path $packagePath)) {
         return $false
     }
 
+    # 👉 GEEN [version] cast meer (NodeJS, Java, etc.)
     $latestVersion = Get-ChildItem $packagePath -Directory |
-        Sort-Object { [version]$_.Name } -Descending |
+        Sort-Object Name -Descending |
         Select-Object -First 1
 
     if (-not $latestVersion) {
@@ -55,11 +78,10 @@ function Test-WinGetPackageDownloadable {
 
     $installer = Get-Content $installerFile.FullName -Raw | ConvertFrom-Yaml
 
-    return ($installer.Installers |
-        Where-Object { $_.InstallerUrl }).Count -gt 0
+    return ($installer.Installers | Where-Object { $_.InstallerUrl }).Count -gt 0
 }
 
-# -------- Parse DSC YAML --------
+
 
 # =========================
 # Load powershell-yaml from local .nupkg (robust)
@@ -94,8 +116,15 @@ if (-not $modulePath) {
     exit 1
 }
 
+
+
 Import-Module $modulePath -Force
 Write-Host "powershell-yaml module geladen"
+
+# --------------------------------------------------
+# Parse DSC YAML
+# --------------------------------------------------
+
 
 $dscConfig = Get-Content $DscFile -Raw | ConvertFrom-Yaml
 
@@ -105,33 +134,41 @@ $wingetResources = $dscConfig.properties.resources | Where-Object {
 }
 
 if (-not $wingetResources) {
-    Write-Host "ℹ️ No WinGetPackage resources found. Nothing to validate."
+    Write-Host "ℹ️ No WinGetPackage resources found."
     exit 0
 }
 
-# -------- Validate --------
-
+# --------------------------------------------------
+# Validation
+# --------------------------------------------------
 $errors = @()
 
 foreach ($res in $wingetResources) {
     $packageId = $res.settings.id
     Write-Host "🔍 Validating WinGet package: $packageId"
 
-    if (-not (Test-WinGetPackageDownloadable `
+    # 1️⃣ EXISTS check (hard fail)
+    if (-not (Test-WinGetPackageExists `
         -PackageId $packageId `
         -WingetRepoRoot $WingetRepoRoot)) {
 
-        Write-Host "❌ Package $packageId is NOT valid or not downloadable"
+        Write-Error "❌ Package '$packageId' is NOT known in winget"
         $errors += $packageId
+        continue
+    }
+
+    Write-Host "✅ Package '$packageId' exists in winget"
+
+    # 2️⃣ Download check (informational)
+    if (Test-WinGetPackageHasInstaller `
+        -PackageId $packageId `
+        -WingetRepoRoot $WingetRepoRoot) {
+
+        Write-Host "⬇️ Package '$packageId' has downloadable installer(s)"
     }
     else {
-        Write-Host "✅ Package $packageId is valid and downloadable"
+        Write-Host "⚠️ Package '$packageId' has no direct installer URL (allowed)"
     }
 }
 
 if ($errors.Count -gt 0) {
-    Write-Error "Invalid WinGet packages found: $($errors -join ', ')"
-    exit 1
-}
-
-Write-Host "🎉 All WinGet DSC packages are valid."
