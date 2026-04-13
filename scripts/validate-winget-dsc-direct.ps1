@@ -8,12 +8,16 @@ param (
 Write-Host "📄 Reading DSC configuration: $DscFile"
 
 if (-not (Test-Path $DscFile)) {
-    Write-Error "DSC file not found: $DscFile"
+    Write-Error "❌ DSC file not found: $DscFile"
     exit 1
 }
 
 # --------------------------------------------------
-# Helper: check if WinGet package exists via winget CLI
+# Helper: check if WinGet package exists via `winget show`
+# This works for:
+# - community packages
+# - Microsoft builtin / framework packages
+# - exactly matches DSC install behavior
 # --------------------------------------------------
 function Test-WinGetPackageExists {
     param (
@@ -22,14 +26,9 @@ function Test-WinGetPackageExists {
     )
 
     try {
-        $result = winget search `
-            --id $PackageId `
-            --exact `
-            --source winget `
-            --output json 2>$null |
-            ConvertFrom-Json
-
-        return ($result -and $result.Data -and $result.Data.Count -gt 0)
+        # We don't care about the output, only if WinGet resolves the ID
+        winget show $PackageId --output json 2>$null | Out-Null
+        return $true
     }
     catch {
         return $false
@@ -96,13 +95,13 @@ $invalidPackages = @()
 
 foreach ($resource in $wingetResources) {
     $packageId = $resource.settings.id
-    Write-Host "🔍 Validating WinGet package via winget CLI: $packageId"
+    Write-Host "🔍 Validating WinGet package via winget show: $packageId"
 
     if (Test-WinGetPackageExists -PackageId $packageId) {
-        Write-Host "✅ Package '$packageId' is known to winget"
+        Write-Host "✅ Package '$packageId' is known to WinGet"
     }
     else {
-        Write-Error "❌ Package '$packageId' is NOT known to winget"
+        Write-Error "❌ Package '$packageId' is NOT known to WinGet"
         $invalidPackages += $packageId
     }
 }
