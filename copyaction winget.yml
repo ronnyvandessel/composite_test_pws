@@ -1,0 +1,15 @@
+name: Validate WinGet DSC Packages
+description: Validate Microsoft.WinGet.DSC/WinGetPackage IDs using winget CLI
+
+inputs:
+  dscfile:
+    description: Path to DSC YAML file
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Validate WinGet packages via winget CLI
+      shell: pwsh
+      run: |
+        & (Join-Path $env:GITHUB_ACTION_PATH 'scripts/validate-winget-dsc-direct.ps1') -DscFile "${{ inputs.dscfile }}"

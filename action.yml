@@ -1,5 +1,5 @@
-name: Validate WinGet DSC Packages
-description: Validate Microsoft.WinGet.DSC/WinGetPackage IDs using winget CLI
+name: Validate WinGet DSC Packages (REST)
+description: Validate Microsoft.WinGet.DSC WinGetPackage IDs using WinGet REST API (no winget.exe)
 
 inputs:
   dscfile:
@@ -9,7 +9,7 @@ inputs:
 runs:
   using: composite
   steps:
-    - name: Validate WinGet packages via winget CLI
+    - name: Validate WinGet packages via REST
       shell: pwsh
       run: |
-        & (Join-Path $env:GITHUB_ACTION_PATH 'scripts/validate-winget-dsc-direct.ps1') -DscFile "${{ inputs.dscfile }}"
+        & (Join-Path $env:GITHUB_ACTION_PATH 'scripts/validate-winget-dsc-api.ps1') -DscFile "${{ inputs.dscfile }}"
