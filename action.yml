@@ -9,11 +9,11 @@ inputs:
 runs:
   using: composite
    steps:
-    # - name: Checkout winget-pkgs repository
-    #   uses: actions/checkout@v4
-    #   with:
-    #     repository: microsoft/winget-pkgs
-    #     path: winget-pkgs
+          # - name: Checkout winget-pkgs repository
+          #   uses: actions/checkout@v4
+          #   with:
+          #     repository: microsoft/winget-pkgs
+          #     path: winget-pkgs
 
     - name: Validate WinGet packages in DSC
       shell: pwsh
