@@ -33,22 +33,24 @@ function Test-WinGetPackageExists {
         return $false
     }
 
-    # Split full PackageIdentifier into all segments
     $segments = $PackageId.Split('.')
-
-    # First letter folder (lowercase)
     $firstLetter = $segments[0].Substring(0,1).ToLower()
 
-    # Build correct winget manifest path
-    # manifests/<first-letter>/<Publisher>/<Sub>/<Sub>/...
-    $pathArray = @('manifests', $firstLetter) + $segments
-    $relativePath = Join-Path -Path $pathArray
+    # Build path step-by-step (robust)
+    $relativePath = 'manifests'
+    $relativePath = Join-Path $relativePath $firstLetter
+
+    foreach ($segment in $segments) {
+        $relativePath = Join-Path $relativePath $segment
+    }
 
     $packagePath = Join-Path $WingetRepoRoot $relativePath
 
+    # Debug (optioneel, kan je later verwijderen)
+    Write-Host "Resolved winget path: $packagePath"
+
     return (Test-Path $packagePath)
 }
-
 # =========================
 # Load powershell-yaml from local .nupkg (robust)
 # =========================
