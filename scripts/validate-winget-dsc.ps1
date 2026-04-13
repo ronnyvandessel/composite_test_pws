@@ -17,7 +17,8 @@ if (-not (Test-Path $DscFile)) {
 }
 
 # --------------------------------------------------
-# Helper: check if package EXISTS in winget
+# Helper: check if a WinGet package exists in winget-pkgs
+# Supports multi-segment PackageIdentifiers
 # --------------------------------------------------
 function Test-WinGetPackageExists {
     param (
@@ -32,56 +33,21 @@ function Test-WinGetPackageExists {
         return $false
     }
 
-    $publisher, $app = $PackageId -split '\.', 2
-    $firstLetter = $publisher.Substring(0,1).ToLower()
+    # Split full PackageIdentifier into all segments
+    $segments = $PackageId.Split('.')
 
-    $packagePath = Join-Path $WingetRepoRoot "manifests\$firstLetter\$publisher\$app"
+    # First letter folder (lowercase)
+    $firstLetter = $segments[0].Substring(0,1).ToLower()
+
+    # Build correct winget manifest path
+    # manifests/<first-letter>/<Publisher>/<Sub>/<Sub>/...
+    $pathArray = @('manifests', $firstLetter) + $segments
+    $relativePath = Join-Path -Path $pathArray
+
+    $packagePath = Join-Path $WingetRepoRoot $relativePath
 
     return (Test-Path $packagePath)
 }
-
-# --------------------------------------------------
-# Helper: best-effort downloadability check (OPTIONAL)
-# --------------------------------------------------
-function Test-WinGetPackageHasInstaller {
-    param (
-        [Parameter(Mandatory)]
-        [string]$PackageId,
-
-        [Parameter(Mandatory)]
-        [string]$WingetRepoRoot
-    )
-
-    $publisher, $app = $PackageId -split '\.', 2
-    $firstLetter = $publisher.Substring(0,1).ToLower()
-    $packagePath = Join-Path $WingetRepoRoot "manifests\$firstLetter\$publisher\$app"
-
-    if (-not (Test-Path $packagePath)) {
-        return $false
-    }
-
-    # 👉 GEEN [version] cast meer (NodeJS, Java, etc.)
-    $latestVersion = Get-ChildItem $packagePath -Directory |
-        Sort-Object Name -Descending |
-        Select-Object -First 1
-
-    if (-not $latestVersion) {
-        return $false
-    }
-
-    $installerFile = Get-ChildItem $latestVersion.FullName -Filter "*installer*.yaml" |
-        Select-Object -First 1
-
-    if (-not $installerFile) {
-        return $false
-    }
-
-    $installer = Get-Content $installerFile.FullName -Raw | ConvertFrom-Yaml
-
-    return ($installer.Installers | Where-Object { $_.InstallerUrl }).Count -gt 0
-}
-
-
 
 # =========================
 # Load powershell-yaml from local .nupkg (robust)
@@ -121,11 +87,10 @@ if (-not $modulePath) {
 Import-Module $modulePath -Force
 Write-Host "powershell-yaml module geladen"
 
+
 # --------------------------------------------------
 # Parse DSC YAML
 # --------------------------------------------------
-
-
 $dscConfig = Get-Content $DscFile -Raw | ConvertFrom-Yaml
 
 $wingetResources = $dscConfig.properties.resources | Where-Object {
@@ -134,46 +99,34 @@ $wingetResources = $dscConfig.properties.resources | Where-Object {
 }
 
 if (-not $wingetResources) {
-    Write-Host "ℹ️ No WinGetPackage resources found."
+    Write-Host "ℹ️ No WinGetPackage resources found in DSC file."
     exit 0
 }
 
 # --------------------------------------------------
 # Validation
 # --------------------------------------------------
-$errors = @()
+$invalidPackages = @()
 
-foreach ($res in $wingetResources) {
-    $packageId = $res.settings.id
+foreach ($resource in $wingetResources) {
+    $packageId = $resource.settings.id
     Write-Host "🔍 Validating WinGet package: $packageId"
 
-    # 1️⃣ EXISTS check (hard fail)
-    if (-not (Test-WinGetPackageExists `
-        -PackageId $packageId `
-        -WingetRepoRoot $WingetRepoRoot)) {
-
-        Write-Error "❌ Package '$packageId' is NOT known in winget"
-        $errors += $packageId
-        continue
-    }
-
-    Write-Host "✅ Package '$packageId' exists in winget"
-
-    # 2️⃣ Download check (informational)
-    if (Test-WinGetPackageHasInstaller `
+    if (Test-WinGetPackageExists `
         -PackageId $packageId `
         -WingetRepoRoot $WingetRepoRoot) {
 
-        Write-Host "⬇️ Package '$packageId' has downloadable installer(s)"
+        Write-Host "✅ Package '$packageId' exists in winget"
     }
     else {
-        Write-Host "⚠️ Package '$packageId' has no direct installer URL (allowed)"
+        Write-Error "❌ Package '$packageId' is NOT known in winget"
+        $invalidPackages += $packageId
     }
 }
 
-if ($errors.Count -gt 0) {
-    Write-Error "Invalid WinGet package IDs found: $($errors -join ', ')"
+if ($invalidPackages.Count -gt 0) {
+    Write-Error "Invalid WinGet package IDs found: $($invalidPackages -join ', ')"
     exit 1
 }
 
-Write-Host "🎉 All WinGet DSC packages are valid."
+Write-Host "🎉 All WinGet DSC WinGetPackage IDs are valid."
