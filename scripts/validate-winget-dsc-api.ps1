@@ -12,10 +12,9 @@ if (-not (Test-Path $DscFile)) {
     exit 1
 }
 
-# Import local REST validation module
-$modulePath = Join-Path $PSScriptRoot 'WinGet.RestValidation.psm1'
+# Import local GitHub API validation module
+$modulePath = Join-Path $PSScriptRoot 'WinGet.GitHubValidation.psm1'
 Import-Module $modulePath -Force
-
 
 
 # =========================
@@ -70,27 +69,27 @@ if (-not $wingetResources) {
     exit 0
 }
 
-$invalid = @()
+$invalidPackages = @()
 
 foreach ($res in $wingetResources) {
     $id = $res.settings.id
-    Write-Host "🔍 Validating WinGet package via REST API: $id"
+    Write-Host "🔍 Validating WinGet package via GitHub API: $id"
 
-    if (Test-WinGetPackage -PackageId $id) {
-        Write-Host "✅ Package '$id' exists in WinGet"
+    if (Test-WinGetPackageViaGitHub -PackageId $id) {
+        Write-Host "✅ Package '$id' exists in winget-pkgs"
     }
     else {
-        Write-Host "❌ Package '$id' does NOT exist in WinGet"
-        $invalid += $id
+        Write-Host "❌ Package '$id' does NOT exist in winget-pkgs"
+        $invalidPackages += $id
     }
 }
 
-if ($invalid.Count -gt 0) {
+if ($invalidPackages.Count -gt 0) {
     Write-Host ""
     Write-Host "❌ Invalid WinGet package IDs found:"
-    $invalid | ForEach-Object { Write-Host "  - $_" }
+    $invalidPackages | ForEach-Object { Write-Host "  - $_" }
     exit 1
 }
 
-Write-Host "🎉 All WinGet DSC WinGetPackage IDs are valid."
+Write-Host "🎉 All WinGet DSC WinGetPackage IDs are valid (GitHub API)."
 exit 0
