@@ -13,3 +13,11 @@ runs:
       shell: pwsh
       run: |
         & (Join-Path $env:GITHUB_ACTION_PATH 'scripts/validate-winget-dsc-api.ps1') -DscFile "${{ inputs.dscfile }}"
+
+        
+    - name: Validate msstore WinGet packages via WinGet Client
+      shell: pwsh
+      run: |
+        & (Join-Path $env:GITHUB_ACTION_PATH 'scripts/validate-winget-dsc-msstore.ps1') `
+          -DscFile "${{ inputs.dscfile }}" `
+          -WinGetClientNuPkg (Join-Path $env:GITHUB_ACTION_PATH 'scripts/Microsoft.WinGet.Client.0.2.1.nupkg')
