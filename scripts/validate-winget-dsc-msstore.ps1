@@ -96,21 +96,13 @@ function Test-MsStorePackage {
     )
 
     try {
-        $pm = New-Object Microsoft.WinGet.Client.PackageManager
+        $result = Find-WinGetPackage `
+            -Id $PackageId `
+            -Exact `
+            -Source msstore `
+            -ErrorAction Stop
 
-        $sources = $pm.GetSources()
-        $store   = $sources | Where-Object Name -eq 'msstore'
-
-        if (-not $store) {
-            throw "WinGet source 'msstore' not available"
-        }
-
-        $options = New-Object Microsoft.WinGet.Client.CompositeSearchOptions
-        $options.SearchById = $PackageId
-        $options.Source    = $store
-
-        $result = $pm.Search($options)
-        return ($result.Matches.Count -gt 0)
+        return ($null -ne $result)
     }
     catch {
         Write-Host "⚠️ WinGet Client lookup failed for '$PackageId': $($_.Exception.Message)"
