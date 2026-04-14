@@ -96,27 +96,27 @@ function Test-MsStorePackage {
     )
 
     try {
-        $pm = [Microsoft.WinGet.Client.PackageManager]::new()
-        $sources = $pm.GetSources()
+        $pm = New-Object Microsoft.WinGet.Client.PackageManager
 
-        $storeSource = $sources | Where-Object Name -eq 'msstore'
-        if (-not $storeSource) {
+        $sources = $pm.GetSources()
+        $store   = $sources | Where-Object Name -eq 'msstore'
+
+        if (-not $store) {
             throw "WinGet source 'msstore' not available"
         }
 
-        $options = [Microsoft.WinGet.Client.CompositeSearchOptions]::new()
+        $options = New-Object Microsoft.WinGet.Client.CompositeSearchOptions
         $options.SearchById = $PackageId
-        $options.Source = $storeSource
+        $options.Source    = $store
 
         $result = $pm.Search($options)
         return ($result.Matches.Count -gt 0)
     }
     catch {
-        Write-Host "⚠️ WinGet client error for msstore package '$PackageId': $($_.Exception.Message)"
+        Write-Host "⚠️ WinGet Client lookup failed for '$PackageId': $($_.Exception.Message)"
         return $false
     }
 }
-
 
 # ------------------------------------------------------------------
 # Parse DSC YAML
