@@ -67,27 +67,24 @@ Write-Host "powershell-yaml module geladen"
 
 
 # ------------------------------------------------------------------
-# Import Microsoft.WinGet.Client from NuPkg (FIXED & ROBUST)
+# Import Microsoft.WinGet.Client PowerShell module from NuPkg
 # ------------------------------------------------------------------
 
-$extractPath = Join-Path $env:TEMP "winget-client-$([guid]::NewGuid())"
-Write-Host "📦 Extracting WinGet Client NuPkg to $extractPath"
+$extractRoot = Join-Path $env:TEMP "winget-client-$([guid]::NewGuid())"
+Write-Host "📦 Extracting WinGet Client NuPkg to $extractRoot"
 
-Expand-Archive -Path $WinGetClientNuPkg -DestinationPath $extractPath -Force
+Expand-Archive -Path $WinGetClientNuPkg -DestinationPath $extractRoot -Force
 
-$dllPath = Join-Path $extractPath 'lib/net6.0/Microsoft.WinGet.Client.dll'
+$psd1 = Get-ChildItem $extractRoot -Recurse -Filter "Microsoft.WinGet.Client.psd1" |
+        Select-Object -First 1
 
-if (-not (Test-Path $dllPath)) {
-    Write-Host "❌ Microsoft.WinGet.Client.dll not found at expected path:"
-    Write-Host "   $dllPath"
-    Write-Host ""
-    Write-Host "📂 Extracted contents:"
-    Get-ChildItem $extractPath -Recurse | Select-Object FullName
+if (-not $psd1) {
+    Write-Host "❌ Microsoft.WinGet.Client.psd1 not found in NuPkg"
     exit 1
 }
 
-Add-Type -Path $dllPath
-Write-Host "✅ Loaded Microsoft.WinGet.Client from NuPkg"
+Import-Module $psd1.FullName -Force
+Write-Host "✅ Microsoft.WinGet.Client PowerShell module loaded"
 
 # ------------------------------------------------------------------
 # Helper: check msstore package via WinGet client
