@@ -1,7 +1,7 @@
 # WinGet.RestValidation.psm1
-# Local REST-based validation helpers (no winget CLI required)
+# GitHub‑API‑only validation using GITHUB_TOKEN (no anonymous calls)
 
-# GitHub-API-based WinGet validation helpers
+$script:WingetGitHubCache = @{}
 
 function Test-WinGetPackageViaGitHub {
     [CmdletBinding()]
@@ -10,37 +10,47 @@ function Test-WinGetPackageViaGitHub {
         [string]$PackageId
     )
 
-    # Split PackageIdentifier correctly (supports multi-segment IDs)
-    $segments = $PackageId.Split('.')
-    $firstLetter = $segments[0].Substring(0,1).ToLower()
+    # Cache check (1 call per unique package per run)
+    if ($script:WingetGitHubCache.ContainsKey($PackageId)) {
+        return $script:WingetGitHubCache[$PackageId]
+    }
 
-    # Build winget-pkgs path
-    # manifests/<first-letter>/<Publisher>/<Sub>/<Sub>/...
-    $pathParts = @('manifests', $firstLetter) + $segments
-    $path = ($pathParts -join '/')
+    if (-not $env:GITHUB_TOKEN) {
+        throw "GITHUB_TOKEN is not available. This function requires GitHub Actions."
+    }
+
+    # Build path: manifests/<first-letter>/<Publisher>/<Sub>/...
+    $segments    = $PackageId.Split('.')
+    $firstLetter = $segments[0].Substring(0, 1).ToLower()
+    $path        = (@('manifests', $firstLetter) + $segments) -join '/'
 
     $uri = "https://api.github.com/repos/microsoft/winget-pkgs/contents/$path"
+
+    $headers = @{
+        'Accept'        = 'application/vnd.github+json'
+        'User-Agent'    = 'WinGet-DSC-Validation'
+        'Authorization' = "Bearer $env:GITHUB_TOKEN"
+    }
 
     try {
         Invoke-RestMethod `
             -Uri $uri `
-            -Headers @{
-                'Accept'     = 'application/vnd.github+json'
-                'User-Agent' = 'WinGet-DSC-Validation'
-            } `
+            -Headers $headers `
             -Method Get `
             -TimeoutSec 15 `
             -ErrorAction Stop | Out-Null
 
+        $script:WingetGitHubCache[$PackageId] = $true
         return $true
     }
     catch {
-        # 404 = path does not exist → package does not exist
         if ($_.Exception.Response -and
             $_.Exception.Response.StatusCode.Value__ -eq 404) {
+
+            $script:WingetGitHubCache[$PackageId] = $false
             return $false
         }
 
-        throw "GitHub API error while querying '$PackageId': $($_.Exception.Message)"
+        throw "GitHub API error for '$PackageId': $($_.Exception.Message)"
     }
 }
